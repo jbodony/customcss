@@ -1,0 +1,6 @@
+name: Custom CSS
+type: module
+description: Module to allow a user to specify single or multiple CSS classes that can then be applied to the 'body' tag on specific pages on the front end.
+core_version_requirement: ^8.8 || ^9
+package: Custom
+configure: customcss.admin_settings

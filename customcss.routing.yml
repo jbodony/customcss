@@ -1,0 +1,7 @@
+customcss.admin_settings:
+  path: '/admin/config/customcss'
+  defaults:
+    _form: '\Drupal\customcss\Form\CustomCssConfigurationForm'
+    _title: 'Customcss configuration screen'
+  requirements:
+    _permission: 'administer site configuration'

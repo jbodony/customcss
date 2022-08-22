@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * This is the module to allow a user to specify single or multiple CSS classes
+ * that can then be applied to the 'body' tag
+ * on specific pages on the front end.
+ */
+
+/**
+ * Implements hook_page_attachments_alter().
+ */
+function customcss_page_attachments_alter(array &$page) {
+
+  $current_path_alias = customcss_get_current_path();
+
+  $config = \Drupal::service('config.factory')
+    ->getEditable('customcss.admin_settings');
+  $urlcss = customcss_urls_classes_slice($config->get('customcss_urls_classes'));
+
+  if (!empty($current_path_alias) && !empty($urlcss)) {
+    foreach ($urlcss["urls"] as $key => $urls) {
+      if (strpos($current_path_alias, $urls) !== FALSE) {
+        $page['#attached']['html_head'][] = [
+          [
+            '#tag' => 'style',
+            '#value' => $urlcss["CSS"][$key],
+          ],
+          'customcss_headcss',
+        ];
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function customcss_preprocess_html(&$variables) {
+
+  $current_path_alias = customcss_get_current_path();
+
+  $config = \Drupal::service('config.factory')
+    ->getEditable('customcss.admin_settings');
+  $urlcss = customcss_urls_classes_slice($config->get('customcss_urls_classes'));
+
+  if (!empty($current_path_alias) && !empty($urlcss)) {
+    foreach ($urlcss["urls"] as $key => $urls) {
+      if (strpos($current_path_alias, $urls) !== FALSE) {
+        // Add CSS classname to the attributes
+        $variables['attributes']['class'][] = substr($urlcss["CSS"][$key], 1, strpos($urlcss["CSS"][$key], "{") - 1);
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to slice the config textarea where the urls and css
+ * classes has been defined.
+ *
+ * @param string $customcss the given urls and css classes.
+ */
+function customcss_urls_classes_slice(string $customcss): array {
+  $rows = [];
+  if (!empty(trim($customcss))) {
+    $customcss = trim($customcss);
+    if (substr(trim($customcss), -1) != "|") {
+      $customcss .= "|";
+    }
+    preg_match_all("/((.|\n)*)\|((.|\n)*)\|/U",
+      $customcss,
+      $urlcssrows, PREG_PATTERN_ORDER);
+    foreach ($urlcssrows[1] as $key => $urlcssrow) {
+      $rows["urls"][] = trim($urlcssrow);
+      $rows["CSS"][] = trim($urlcssrows[3][$key]);
+    }
+  }
+  return $rows;
+}
+
+/**
+ * Helper function to get the current path aliases without "/" at the beginning.
+ */
+function customcss_get_current_path(): string {
+  $current_path = \Drupal::service('path.current')->getPath();
+  $current_path_alias = \Drupal::service('path_alias.manager')
+    ->getAliasByPath($current_path);
+  if (substr($current_path_alias, 0, 1) == "/") {
+    $output = substr($current_path_alias, 1);
+  }
+  else {
+    $output = $current_path_alias;
+  }
+  return $output;
+}
